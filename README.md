@@ -22,14 +22,14 @@ If you are using Maven, add the following repository definition to your `pom.xml
 With Leiningen:
 
 ``` clj
-[google/clojure-turtle "0.1.0"]
+[clojure-turtle "0.1.0"]
 ```
 
 With Maven:
 
 ``` xml
 <dependency>
-  <groupId>google</groupId>
+  <groupId>clojure-turtle</groupId>
   <artifactId>clojure-turtle</artifactId>
   <version>0.1.0</version>
 </dependency>
