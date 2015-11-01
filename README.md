@@ -54,7 +54,12 @@ Load the `clojure-turtle.core` namespace.
 ```
 The symbol `repeat` is overridden to behave more like the Logo function, but the Clojure core function is still available as `clojure.core/repeat`.
 
-The `use` call will also evaluate Quil code that creates a sketch in a separate window, in which our turtle lives and operates.
+Now load a new window that shows our Quil sketch using the `new-window` form. The sketch is where our turtle lives and operates.
+
+```clojure
+user=> (new-window)
+;=> #'user/example
+```
 
 ![](https://github.com/google/clojure-turtle/blob/master/doc/img/frame00.png)
 
@@ -259,6 +264,10 @@ What do you get when you enter the following?
 ```
 
 What possibilities exist when you incorporate the full power of Clojure?  What can you create?
+
+## Mailing List
+
+Join the [clojure-turtle mailing list](https://groups.google.com/forum/#!forum/clojure-turtle) to post questions and receive announcements.
 
 ## License
 

@@ -216,9 +216,13 @@
     (draw-turtle) 
     (q/pop-matrix)))
 
-(q/defsketch example                  ;; Define a new sketch named example
-  :title "Watch the turtle go!"       ;; Set the title of the sketch
-  :setup setup                        ;; Specify the setup fn
-  :draw draw                          ;; Specify the draw fn
-  :size [323 200])                    ;; You struggle to beat the golden ratio 
-
+(defmacro new-window
+  [& [config]]
+  (let [default-config {:title "Watch the turtle go!"
+                        :size [323 200]}
+        {:keys [title size]} (merge default-config config)]
+    `(q/defsketch ~'example
+       :title ~title
+       :setup setup
+       :draw draw
+       :size ~size)))
