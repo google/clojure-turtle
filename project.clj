@@ -1,4 +1,4 @@
-(defproject clojure-turtle "0.1.0"
+(defproject com.google/clojure-turtle "0.1.1-SNAPSHOT"
   :description "A Clojure library that implements the Logo programming language in a Clojure context"
   :url "https://github.com/google/clojure-turtle"
   :license {:name "Apache License, Version 2.0"
