@@ -204,17 +204,17 @@ clojure-turtle uses Quil, which uses [Processing](https://processing.org/). cloj
 What do you get when you enter the following?
 
 ```clojure
-(defn any-square
-  [s]
-  (repeat 4 (all (forward s) (right 90))))
+(defn square-by-length
+  [side-length]
+  (repeat 4 (all (forward side-length) (right 90))))
 
-(any-square 10)
-(any-square 20)
+(square-by-length 10)
+(square-by-length 20)
 ```
 
 ```clojure
 (def lengths [40 50 60])
-(map any-square lengths)
+(map square-by-length lengths)
 ```
 
 ```clojure
@@ -223,29 +223,31 @@ What do you get when you enter the following?
   (* 2 x))
 
 (right 90)
-(map any-square (map times-2 lengths))
+(map square-by-length (map times-2 lengths))
+
 (right 90)
 (->> lengths
      (map times-2)
-     (map any-square))
+     (map square-by-length))
 ```
 
 ```clojure
 (defn polygon-side
-  [n s]
-  (forward s)
-  (right (/ 360 n)))
+  [num-sides side-length]
+  (forward side-length)
+  (right (/ 360 num-sides)))
 
-(defn any-polygon
-  [n s]
-  (repeat n (all (polygon-side n s))))
+(defn polygon
+  [num-sides side-length]
+  (repeat num-sides (all (polygon-side num-sides side-length))))
 
 (clean)
 (right 180)
-(any-polygon 5 20)
-(def sides [6 7 8 10 12])
+(polygon 5 20)
+
+(def side-counts [6 7 8 10 12])
 (def lengths (reverse [30 40 50 60 70]))
-(map any-polygon sides lengths)
+(map polygon side-counts lengths)
 ```
 
 ```clojure
@@ -268,6 +270,19 @@ What possibilities exist when you incorporate the full power of Clojure?  What c
 ## Mailing List
 
 Join the [clojure-turtle mailing list](https://groups.google.com/forum/#!forum/clojure-turtle) to post questions and receive announcements.
+
+## How to Contribute
+
+Interested in contributing code to the project?  We would love to have
+your help!
+
+Before you can contribute, you should first read the
+[page on contributing](./CONTRIBUTING.md) and agree to the Contributor
+License Agreement.  Signing the CLA can be done online and is fast.
+This is a one-time process.
+
+Thereafter, contributions can be initiated through a [pull
+request](https://help.github.com/articles/using-pull-requests/).
 
 ## License
 

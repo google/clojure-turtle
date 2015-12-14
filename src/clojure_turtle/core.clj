@@ -18,22 +18,28 @@
   (:use clojure.pprint))
 
 (defn new-turtle
+  "Returns an entity that represents a turtle."
   []
   (atom {:x 0
          :y 0
          :angle 90
          :pen true}))
 
-(def turtle (new-turtle))
+(def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
+  turtle (new-turtle))
 
-(def lines (atom []))
+(def ^{:doc "The set of lines drawn in the canvas by the default turtle."}
+  lines (atom []))
 
 (defn alter-turtle
+  "A helper function used in the implementation of basic operations to abstract
+  out the interface of applying a function to a turtle entity."
   [turt f] 
   (swap! turt f)
   turt)
 
 (defn right
+  "Rotate the turtle turt clockwise by ang degrees."
   ([ang]
      (right turtle ang))
   ([turt ang]
@@ -46,12 +52,14 @@
        (alter-turtle turt add-angle))))
 
 (defn left
+  "Same as right, but turns the turtle counter-clockwise."
   ([ang]
      (right (* -1 ang)))
   ([turt ang]
      (right turt (* -1 ang))))
 
 (defn translate
+  "Move the turtle t horizontally by length dx and vertically by length dy."
   [{:keys [x y pen] :as t} dx dy]
   (let [new-x (+ x dx)
         new-y (+ y dy)
@@ -70,6 +78,7 @@
 (def atan q/atan)
 
 (defn forward
+  "Move the turtle turt forward in the direction that it is facing by length len."
   ([len]
      (forward turtle len))
   ([turt len]
@@ -80,12 +89,14 @@
        (alter-turtle turt alter-fn))))
 
 (defn back
+  "Same as forward, but move the turtle backwards, which is opposite of the direction it is facing."
   ([len]
      (forward (* -1 len)))
   ([turt len]
      (forward turt (* -1 len))))
 
 (defn penup
+  "Instruct the turtle to pick its pen up. Subsequent movements will not draw to screen until the pen is put down again."
   ([]
      (penup turtle))
   ([turt]
@@ -93,6 +104,7 @@
        (alter-turtle turt alter-fn))))
 
 (defn pendown
+  "Instruct the turtle to put its pen down. Subsequent movements will draw to screen."
   ([]
      (pendown turtle))
   ([turt]
@@ -100,6 +112,7 @@
        (alter-turtle turt alter-fn))))
 
 (defn draw-turtle
+  "A helper function that draws the triangle that represents the turtle onto the screen."
   ([]
      (draw-turtle turtle))
   ([turt]
@@ -142,12 +155,16 @@
             (map (fn [line] (apply q/line (flatten line))) lines)))))))
 
 (defmacro all
+  "This macro was created to substitute for the purpose served by the square brackets in Logo
+  in a call to REPEAT.  This macro returns a no-argument function that, when invoked, executes
+  the commands described in the body inside the macro call/form."
   [& body]
   `(fn []
      (do
        ~@ body)))
 
 (defmacro repeat
+  "A macro to translate the purpose of the Logo REPEAT function."
   [n & body] 
   `(let [states# (repeatedly ~n ~@body)]
      (dorun
@@ -155,6 +172,7 @@
      (last states#)))
 
 (defn clean
+  "Clear the lines state, which effectively clears the drawing canvas."
   ([]
      (clean lines))
   ([lines]
@@ -162,6 +180,7 @@
        (swap! lines alter-fn))))
 
 (defn setxy
+  "Set the position of turtle turt to x-coordinate x and y-coordinate y."
   ([x y]
      (setxy turtle x y))
   ([turt x y]
@@ -177,6 +196,8 @@
          turt))))
 
 (defn setheading
+  "Set the direction which the turtle is facing, given in degrees, where 0 is to the right,
+  90 is up, 180 is left, and 270 is down."
   ([ang]
      (setheading turtle ang))
   ([turt ang]
@@ -185,6 +206,7 @@
        (alter-turtle turt alter-fn))))
 
 (defn home
+  "Set the turtle at coordinates (0,0), facing up (heading = 90 degrees)"
   ([]
      (home turtle))
   ([turt] 
@@ -192,18 +214,23 @@
      (setheading turt 90)))
 
 (defn reset-rendering
+  "A helper function for the Quil rendering function."
   []
   (.clear (q/current-graphics))
   (q/background 200)                 ;; Set the background colour to
                                      ;; a nice shade of grey.
     (q/stroke-weight 1))
 
-(defn setup []
+(defn setup
+  "A helper function for the Quil rendering function."
+  []
   (q/smooth)                          ;; Turn on anti-aliasing
   ;; (q/frame-rate 1)                    ;; Set framerate to 1 FPS
   (reset-rendering))
 
-(defn draw []
+(defn draw
+  "The function passed to Quil for doing rendering."
+  []
   (q/with-translation [(/ (q/width) 2) (/ (q/height) 2)]
     (reset-rendering)
     
@@ -217,6 +244,9 @@
     (q/pop-matrix)))
 
 (defmacro new-window
+  "Opens up a new window that shows the turtle rendering canvas.  An optional config map
+  can be provided, where the key :title indicates the window title, and the :size key
+  indicates a vector of 2 values indicating the width and height of the window."
   [& [config]]
   (let [default-config {:title "Watch the turtle go!"
                         :size [323 200]}
