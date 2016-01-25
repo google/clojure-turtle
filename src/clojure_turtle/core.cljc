@@ -14,8 +14,8 @@
 
 (ns clojure-turtle.core
   (:refer-clojure :exclude [repeat])
-  (:require [quil.core :as q])
-  (:use clojure.pprint))
+  (:require #?(:clj [quil.core :as q]
+               :cljs [quil.core :as q :include-macros true])))
 
 (defn new-turtle
   "Returns an entity that represents a turtle."
@@ -216,10 +216,9 @@
 (defn reset-rendering
   "A helper function for the Quil rendering function."
   []
-  (.clear (q/current-graphics))
   (q/background 200)                 ;; Set the background colour to
                                      ;; a nice shade of grey.
-    (q/stroke-weight 1))
+  (q/stroke-weight 1))
 
 (defn setup
   "A helper function for the Quil rendering function."
@@ -231,28 +230,39 @@
 (defn draw
   "The function passed to Quil for doing rendering."
   []
-  (q/with-translation [(/ (q/width) 2) (/ (q/height) 2)]
-    (reset-rendering)
-    
-    (q/push-matrix)
-    (q/apply-matrix 1  0 0
-                    0 -1 0)
-    (doseq [l @lines]
-      (let [[[x1 y1] [x2 y2]] l]
-        (q/line x1 y1 x2 y2))) 
-    (draw-turtle) 
-    (q/pop-matrix)))
+  (q/push-matrix)
+  (q/translate (/ (q/width) 2) (/ (q/height) 2))
+  (reset-rendering)
+  (q/push-matrix)
+  (q/scale 1.0 -1.0)
+  (doseq [l @lines]
+    (let [[[x1 y1] [x2 y2]] l]
+      (q/line x1 y1 x2 y2)))
+  (draw-turtle)
+  (q/pop-matrix)
+  (q/pop-matrix))
+
 
 (defmacro new-window
-  "Opens up a new window that shows the turtle rendering canvas.  An optional config map
-  can be provided, where the key :title indicates the window title, and the :size key
-  indicates a vector of 2 values indicating the width and height of the window."
+  "Opens up a new window that shows the turtle rendering canvas.  In CLJS it will render
+  to a HTML5 canvas object. An optional config map can be provided, where the key :title
+  indicates the window title (clj), the :size key indicates a vector of 2 values indicating
+  the width and height of the window, and the :host is the HTML id of the canvas (cljs)."
   [& [config]]
-  (let [default-config {:title "Watch the turtle go!"
-                        :size [323 200]}
-        {:keys [title size]} (merge default-config config)]
+  #?(:clj
+     (let [default-config {:title "Watch the turtle go!"
+                           :size [323 200]}
+           {:keys [title size]} (merge default-config config)]
+       `(q/defsketch ~'example
+          :title ~title
+          :setup setup
+          :draw draw
+          :size ~size)))
+  :cljs
+  (let [default-config {:size [323 200]}
+        {:keys [host size]} (merge default-config config)]
     `(q/defsketch ~'example
-       :title ~title
+       :host ~host
        :setup setup
        :draw draw
        :size ~size)))

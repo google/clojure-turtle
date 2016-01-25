@@ -11,6 +11,7 @@
                                [:name "Elango Cheran"]
                                [:email "elango@google.com"]
                                [:timezone "-8"]]]
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [quil "2.2.5"]]
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/clojurescript "1.7.170"]
+                 [quil "2.3.0"]]
   :jar-exclusions [#"\.cljx|\.swp|\.swo|\.DS_Store"]) 
