@@ -57,7 +57,7 @@ The symbol `repeat` is overridden to behave more like the Logo function, but the
 Now load a new window that shows our Quil sketch using the `new-window` form. The sketch is where our turtle lives and operates.
 
 ```clojure
-user=> (new-window)
+user=> (new-window {:size [300 480]})
 ;=> #'user/example
 ```
 
@@ -266,6 +266,33 @@ What do you get when you enter the following?
 ```
 
 What possibilities exist when you incorporate the full power of Clojure?  What can you create?
+
+## Using the ClojureScript Version
+
+The same codebase in `clojure-turtle` can be compiled to JS and used in a JS runtime in addition to JVM bytecode.  A demo of the JS version can be executed by first running the command:
+
+```clojure
+lein figwheel
+```
+
+Where the output may look like:
+```
+$ lein figwheel
+Figwheel: Starting server at http://localhost:3449
+Figwheel: Watching build - dev
+Compiling "demo/public/js/main.js" from ["src" "demo/src"]...
+Successfully compiled "demo/public/js/main.js" in 16.311 seconds.
+Launching ClojureScript REPL for build: dev
+...
+```
+
+Then, in your browser, visit the URL in the terminal output from the command -- in this example, it is http://localhost:3449.  You will see a webpage load with the Quil canvas containing the turtle.  Back in your terminal, Figwheel will load a ClojureScript REPL that is connected to the webpage (more precisely, the browser REPL running in the webpage).  In the ClojureScript REPL, run:
+
+```
+cljs.user=> (ns clojure-turtle.core)
+```
+
+Now, the above Logo/`clojure-turtle` commands can be issued in the CLJS REPL as described above, with the result visible in the Figwheel-connected browser page.
 
 ## Mailing List
 

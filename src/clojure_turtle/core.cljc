@@ -43,6 +43,8 @@
   ([ang]
      (right turtle ang))
   ([turt ang]
+     ;; the local fn add-angle will increment the angle but keep the
+     ;; resulting angle in the range [0,360), in degrees.
      (letfn [(add-angle
                [{:keys [angle] :as t}]
                (let [new-angle (-> angle
@@ -64,6 +66,7 @@
   (let [new-x (+ x dx)
         new-y (+ y dy)
         line [[x y] [new-x new-y]]]
+    ;; translate is used by forward/back to draw the next movement
     (when (and pen
                (not= [x y] [new-x new-y]))
       (swap! lines conj line))
@@ -82,6 +85,8 @@
   ([len]
      (forward turtle len))
   ([turt len]
+     ;; Convert the turtle's polar coordinates (angle + radius) into
+     ;; Cartesian coordinates (x,y) for display purposes
      (let [rads (deg->radians (get @turt :angle))
            dx (* len (Math/cos rads))
            dy (* len (Math/sin rads))
@@ -157,7 +162,8 @@
 (defmacro all
   "This macro was created to substitute for the purpose served by the square brackets in Logo
   in a call to REPEAT.  This macro returns a no-argument function that, when invoked, executes
-  the commands described in the body inside the macro call/form."
+  the commands described in the body inside the macro call/form.
+  (Haskell programmers refer to the type of function returned a 'thunk'.)"
   [& body]
   `(fn []
      (do
@@ -224,7 +230,6 @@
   "A helper function for the Quil rendering function."
   []
   (q/smooth)                          ;; Turn on anti-aliasing
-  ;; (q/frame-rate 1)                    ;; Set framerate to 1 FPS
   ;; Allow q/* functions to be used from the REPL
   #?(:cljs
      (js/setTimeout #(set! quil.sketch/*applet* (q/get-sketch-by-id "turtle-canvas")) 5))
@@ -233,14 +238,22 @@
 (defn draw
   "The function passed to Quil for doing rendering."
   []
+  ;; Use push-matrix to apply a transformation to the graphing plane.
   (q/push-matrix)
+  ;; By default, positive x is to the right, positive y is down.
+  ;; Here, we tell Quil to move the origin (0,0) to the center of the window.
   (q/translate (/ (q/width) 2) (/ (q/height) 2))
   (reset-rendering)
+  ;; Apply another transformation to the canvas.
   (q/push-matrix)
+  ;; Flip the coordinates horizontally -- converts programmers'
+  ;; x-/y-axes into mathematicians' x-/y-axes
   (q/scale 1.0 -1.0)
+  ;; Draw the lines of where the turtle has been.
   (doseq [l @lines]
     (let [[[x1 y1] [x2 y2]] l]
       (q/line x1 y1 x2 y2)))
+  ;; Draw the turtle itself.
   (draw-turtle)
   (q/pop-matrix)
   (q/pop-matrix))
