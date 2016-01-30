@@ -225,6 +225,9 @@
   []
   (q/smooth)                          ;; Turn on anti-aliasing
   ;; (q/frame-rate 1)                    ;; Set framerate to 1 FPS
+  ;; Allow q/* functions to be used from the REPL
+  #?(:cljs
+     (js/setTimeout #(set! quil.sketch/*applet* (q/get-sketch-by-id "turtle-canvas")) 5))
   (reset-rendering))
 
 (defn draw
@@ -242,27 +245,34 @@
   (q/pop-matrix)
   (q/pop-matrix))
 
+(defmacro if-cljs
+  "Executes `then` clause iff generating ClojureScript code. Stolen from Prismatic code.
+  Ref. http://goo.gl/DhhhSN, http://goo.gl/Bhdyna."
+  [then else]
+  (if (:ns &env) ; nil when compiling for Clojure, nnil for ClojureScript
+    then else))
 
 (defmacro new-window
   "Opens up a new window that shows the turtle rendering canvas.  In CLJS it will render
-  to a HTML5 canvas object. An optional config map can be provided, where the key :title
-  indicates the window title (clj), the :size key indicates a vector of 2 values indicating
-  the width and height of the window, and the :host is the HTML id of the canvas (cljs)."
+  to a new HTML5 canvas object. An optional config map can be provided, where the key
+  :title indicates the window title (clj), the :size key indicates a vector of 2 values
+  indicating the width and height of the window."
   [& [config]]
-  #?(:clj
-     (let [default-config {:title "Watch the turtle go!"
+  `(if-cljs
+    ~(let [default-config {:size [323 200]}
+           {:keys [host size]} (merge default-config config)]
+       `(do
+          (quil.sketch/add-canvas "turtle-canvas")
+          (q/defsketch ~'example
+            :host "turtle-canvas"
+            :setup setup
+            :draw draw
+            :size ~size)))
+    ~(let [default-config {:title "Watch the turtle go!"
                            :size [323 200]}
            {:keys [title size]} (merge default-config config)]
        `(q/defsketch ~'example
           :title ~title
           :setup setup
           :draw draw
-          :size ~size)))
-  :cljs
-  (let [default-config {:size [323 200]}
-        {:keys [host size]} (merge default-config config)]
-    `(q/defsketch ~'example
-       :host ~host
-       :setup setup
-       :draw draw
-       :size ~size)))
+          :size ~size))))
