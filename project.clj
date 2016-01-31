@@ -11,6 +11,27 @@
                                [:name "Elango Cheran"]
                                [:email "elango@google.com"]
                                [:timezone "-8"]]]
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [quil "2.2.5"]]
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/clojurescript "1.7.170"]
+                 [quil "2.3.0"]]
+
+  :profiles {:dev {:plugins [[lein-figwheel "0.5.0-6"]
+                             [lein-cljsbuild "1.1.2"]]
+                   :resource-paths ["demo/public"]
+                   :cljsbuild
+                   {:builds
+                    [{:id "dev"
+                      :source-paths ["src" "demo/src"]
+                      :figwheel {}
+                      :compiler {:main "clojure-turtle.demo"
+                                 :source-map true
+                                 :source-map-timestamp true
+                                 :optimizations :none
+                                 :output-to "demo/public/js/main.js"
+                                 :output-dir "demo/public/js/out"
+                                 :asset-path "js/out"}}]}}}
+
+  :figwheel {:http-server-root ""
+             :repl true}
+
   :jar-exclusions [#"\.cljx|\.swp|\.swo|\.DS_Store"]) 
