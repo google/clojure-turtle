@@ -35,7 +35,10 @@
          :y 0
          :angle 90
          :pen true
-         :color DEFAULT-COLOR}))
+         :color DEFAULT-COLOR
+         :start-fill false
+         :end-fill false
+         :fill false}))
 
 (def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
   turtle (new-turtle))
@@ -96,9 +99,13 @@
   ([[x1 y1] [x2 y2]]
      (new-line turtle x1 y1 x2 y2))
   ([turt [x1 y1] [x2 y2]]
-     {:from [x1 y1]
-      :to [x2 y2]
-      :color (:color turt)}))
+     (let [{:keys [start-fill fill end-fill]} turt]
+       {:from [x1 y1]
+        :to [x2 y2]
+        :color (:color turt)
+        :fill fill
+        :start-fill start-fill
+        :end-fill end-fill})))
 
 (defn translate
   "Move the turtle t horizontally by length dx and vertically by length dy."
@@ -107,12 +114,12 @@
         new-y (+ y dy)
         line (new-line t [x y] [new-x new-y])]
     ;; translate is used by forward/back to draw the next movement
-    (when (and pen
-               (not= [x y] [new-x new-y]))
+    (when pen
       (swap! lines conj line))
     (assoc t
       :x new-x
-      :y new-y)))
+      :y new-y 
+      :start-fill false)))
 
 (def deg->radians q/radians)
 
@@ -161,14 +168,49 @@
   ([line]
      (draw-line turtle line))
   ([turt line]
-     (let [{:keys [from to]} line
+     (let [{:keys [from to start-fill fill end-fill]} line
            [x1 y1] from
            [x2 y2] to
            c (:color line)]
        ;; tell Quil to set the line color
        (apply q/stroke c)
        ;; tell Quil to draw the line
-       (q/line x1 y1 x2 y2))))
+       (q/line x1 y1 x2 y2)
+       ;; check whether to begin a filled shape
+       (when start-fill
+         (q/begin-shape))
+       ;; check whether to continue a filled shape
+       (when fill
+         (q/vertex x1 y1)
+         (q/vertex x2 y2))
+       ;; check whether to end a filled shape, using current color as
+       ;; fill color
+       (when end-fill
+         (apply q/fill c)
+         (q/end-shape)))))
+
+(defn start-fill
+  "Make the turtle fill the area created by his subsequent moves, until end-fill is called."
+  ([]
+     (start-fill turtle))
+  ([turt]
+     (letfn [(alter-fn [t]
+               (-> t
+                   (assoc :start-fill true :fill true :end-fill false)
+                   (translate 0 0)))] 
+       (alter-turtle turt alter-fn))))
+
+(defn end-fill
+  "Stop filling the area of turtle moves. Must be called start-fill."
+  ([]
+     (end-fill turtle))
+  ([turt]
+     (letfn [(alter-fn [t]
+               (-> t
+                   (assoc :start-fill false :fill false :end-fill true)
+                   (translate 0 0)))]
+       (alter-turtle turt alter-fn)
+       )))
 
 (defn draw-turtle
   "A helper function that draws the triangle that represents the turtle onto the screen."
