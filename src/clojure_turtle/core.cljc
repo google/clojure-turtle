@@ -116,6 +116,15 @@
      (letfn [(alter-fn [t] (assoc t :pen true))]
        (alter-turtle turt alter-fn))))
 
+(defn start-fill
+  "Make the turtle fill the area created by his subsequent moves, until end-fill is called."
+  []
+  (swap! lines conj :start-fill))
+
+(defn end-fill []
+  "Stop filling the area of turtle moves. Must be called start-fill."
+  (swap! lines conj :end-fill))
+
 (defn draw-turtle
   "A helper function that draws the triangle that represents the turtle onto the screen."
   ([]
@@ -250,9 +259,20 @@
   ;; x-/y-axes into mathematicians' x-/y-axes
   (q/scale 1.0 -1.0)
   ;; Draw the lines of where the turtle has been.
-  (doseq [l @lines]
-    (let [[[x1 y1] [x2 y2]] l]
-      (q/line x1 y1 x2 y2)))
+  (loop [l @lines
+         fill false]
+    (when-let [line (first l)]
+      (cond (= line :start-fill) (q/begin-shape)
+            (= line :end-fill) (q/end-shape)
+            :else
+            (if-let [[[x1 y1] [x2 y2]] line]
+              (if fill
+                (do (q/vertex x1 y1) (q/vertex x2 y2))
+                (q/line x1 y1 x2 y2))))
+      (recur (rest l)
+             (if (and fill (= line :end-fill))
+               false                    ; Stop filling after :end-fill
+               (or fill (= line :start-fill))))))
   ;; Draw the turtle itself.
   (draw-turtle)
   (q/pop-matrix)
