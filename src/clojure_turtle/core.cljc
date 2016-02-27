@@ -17,13 +17,25 @@
   (:require #?(:clj [quil.core :as q]
                :cljs [quil.core :as q :include-macros true])))
 
+;;
+;; constants
+;;
+
+(def ^{:doc "The default color to be used (ex: if color is not specified)"}
+  DEFAULT-COLOR [0 0 0])
+
+;;
+;; fns - turtle fns
+;;
+
 (defn new-turtle
   "Returns an entity that represents a turtle."
   []
   (atom {:x 0
          :y 0
          :angle 90
-         :pen true}))
+         :pen true
+         :color DEFAULT-COLOR}))
 
 (def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
   turtle (new-turtle))
@@ -37,6 +49,24 @@
   [turt f] 
   (swap! turt f)
   turt)
+
+;;
+;; fns - colors and effects
+;;
+
+(defn color
+  "Set the turtle's color using [red green blue].
+  RGB values are in the range 0 to 255, inclusive."
+  ([c]
+     (color turtle c))
+  ([turt c]
+     (assert (= 3 (count c)) (str "Color should be specified as (color [red green blue])"))
+     (letfn [(alter-fn [t] (assoc t :color c))]
+       (alter-turtle turt alter-fn))))
+
+;;
+;; fns - basic Logo commands
+;;
 
 (defn right
   "Rotate the turtle turt clockwise by ang degrees."
@@ -60,12 +90,22 @@
   ([turt ang]
      (right turt (* -1 ang))))
 
+(defn new-line
+  "Return a data structure representing the line between the coordinates
+  (x1,y1) and (x2,y2)."
+  ([[x1 y1] [x2 y2]]
+     (new-line turtle x1 y1 x2 y2))
+  ([turt [x1 y1] [x2 y2]]
+     {:from [x1 y1]
+      :to [x2 y2]
+      :color (:color turt)}))
+
 (defn translate
   "Move the turtle t horizontally by length dx and vertically by length dy."
   [{:keys [x y pen] :as t} dx dy]
   (let [new-x (+ x dx)
         new-y (+ y dy)
-        line [[x y] [new-x new-y]]]
+        line (new-line t [x y] [new-x new-y])]
     ;; translate is used by forward/back to draw the next movement
     (when (and pen
                (not= [x y] [new-x new-y]))
@@ -116,12 +156,29 @@
      (letfn [(alter-fn [t] (assoc t :pen true))]
        (alter-turtle turt alter-fn))))
 
+(defn draw-line
+  "A helper function that draws a line between 'from' and 'to'."
+  ([line]
+     (draw-line turtle line))
+  ([turt line]
+     (let [{:keys [from to]} line
+           [x1 y1] from
+           [x2 y2] to
+           c (:color line)]
+       ;; tell Quil to set the line color
+       (apply q/stroke c)
+       ;; tell Quil to draw the line
+       (q/line x1 y1 x2 y2))))
+
 (defn draw-turtle
   "A helper function that draws the triangle that represents the turtle onto the screen."
   ([]
      (draw-turtle turtle))
   ([turt]
-     (let [short-leg 5
+     (let [
+           ;; set up a copy of the turtle to draw the triangle that
+           ;; will represent / show the turtle on the graphics canvas
+           short-leg 5
            long-leg 12
            hypoteneuse (Math/sqrt (+ (* short-leg short-leg)
                                      (* long-leg long-leg)))
@@ -133,12 +190,19 @@
            turt-copy (atom (assoc @turt :pen false))
            turt-copy-points (atom [])]
        (letfn [(record-turt-point
+                 ;; record-turt-point takes the current position of the copy
+                 ;; of the turtle, as a point, and saves it in a seq
+                 ;; of points (from which to form lines later)
                  [t]
                  (let [new-x (get @t :x)
                        new-y (get @t :y)
                        new-point [new-x new-y]]
                    (swap! turt-copy-points conj new-point))
                  t)]
+         ;; use the turtle copy to step through the commands required
+         ;; to draw the triangle that represents the turtle.  only at
+         ;; certain points do we record the point, which will be
+         ;; needed to draw the segments that will form the turtle triangle
          (do
            (-> turt-copy
                record-turt-point
@@ -155,9 +219,11 @@
                (forward short-leg)
                record-turt-point
                (left 90)))
-         (let [lines (partition 2 1 @turt-copy-points)]
+         (let [from-to-point-pairs (partition 2 1 @turt-copy-points)
+               lines (map (partial apply new-line @turt-copy) from-to-point-pairs)]
+           ;; draw the lines that represent the turtle 
            (dorun
-            (map (fn [line] (apply q/line (flatten line))) lines)))))))
+            (map draw-line lines)))))))
 
 (defmacro all
   "This macro was created to substitute for the purpose served by the square brackets in Logo
@@ -217,7 +283,12 @@
      (home turtle))
   ([turt] 
      (setxy turt 0 0) 
-     (setheading turt 90)))
+     (setheading turt 90)
+     (color turt DEFAULT-COLOR)))
+
+;;
+;; fns - (Quil-based) rendering and graphics
+;;
 
 (defn reset-rendering
   "A helper function for the Quil rendering function."
@@ -251,8 +322,7 @@
   (q/scale 1.0 -1.0)
   ;; Draw the lines of where the turtle has been.
   (doseq [l @lines]
-    (let [[[x1 y1] [x2 y2]] l]
-      (q/line x1 y1 x2 y2)))
+    (draw-line l))
   ;; Draw the turtle itself.
   (draw-turtle)
   (q/pop-matrix)
