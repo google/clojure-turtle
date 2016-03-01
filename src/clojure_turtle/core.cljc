@@ -97,7 +97,7 @@
   "Return a data structure representing the line between the coordinates
   (x1,y1) and (x2,y2)."
   ([[x1 y1] [x2 y2]]
-     (new-line turtle x1 y1 x2 y2))
+     (new-line turtle [x1 y1] [x2 y2]))
   ([turt [x1 y1] [x2 y2]]
      (let [{:keys [start-fill fill end-fill]} turt]
        {:from [x1 y1]
