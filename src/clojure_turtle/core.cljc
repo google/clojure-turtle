@@ -25,20 +25,49 @@
   DEFAULT-COLOR [0 0 0])
 
 ;;
+;; records
+;;
+
+(defrecord Turtle [x y angle pen color start-fill end-fill fill] 
+  ;; both for Clojure and ClojureScript, override the behavior of the
+  ;; str fn / .toString method to "restore" the default .toString
+  ;; behavior for the entire Turtle record data, instead of just
+  ;; returning whatever pr-str returns
+  Object
+  (toString [turt] (str (select-keys turt (keys turt)))))
+
+;;
+;; record printing definitions
+;;
+
+(defn pr-str-turtle
+  "This method determines what gets returned when passing a Turtle record instance to pr-str, which in turn affects what gets printed at the REPL"
+  [turt]
+  (pr-str (select-keys turt [:x :y :angle :pen :color :fill])))
+
+#?(:clj (defmethod print-method Turtle [turt writer]
+          (.write writer (pr-str-turtle turt))))
+
+#?(:cljs (extend-type Turtle
+           IPrintWithWriter
+           (-pr-writer [turt writer _]
+             (-write writer (pr-str-turtle turt)))))
+
+;;
 ;; fns - turtle fns
 ;;
 
 (defn new-turtle
   "Returns an entity that represents a turtle."
   []
-  (atom {:x 0
-         :y 0
-         :angle 90
-         :pen true
-         :color DEFAULT-COLOR
-         :start-fill false
-         :end-fill false
-         :fill false}))
+  (atom (map->Turtle {:x 0
+                      :y 0
+                      :angle 90
+                      :pen true
+                      :color DEFAULT-COLOR
+                      :start-fill false
+                      :end-fill false
+                      :fill false})))
 
 (def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
   turtle (new-turtle))
