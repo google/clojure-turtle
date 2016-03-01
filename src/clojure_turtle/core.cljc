@@ -28,7 +28,7 @@
 ;; records
 ;;
 
-(defrecord Turtle [x y angle pen color start-fill end-fill fill] 
+(defrecord Turtle [x y angle pen color start-fill end-fill fill lines] 
   ;; both for Clojure and ClojureScript, override the behavior of the
   ;; str fn / .toString method to "restore" the default .toString
   ;; behavior for the entire Turtle record data, instead of just
@@ -67,13 +67,11 @@
                       :color DEFAULT-COLOR
                       :start-fill false
                       :end-fill false
-                      :fill false})))
+                      :fill false
+                      :lines []})))
 
 (def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
   turtle (new-turtle))
-
-(def ^{:doc "The set of lines drawn in the canvas by the default turtle."}
-  lines (atom []))
 
 (defn alter-turtle
   "A helper function used in the implementation of basic operations to abstract
@@ -138,16 +136,16 @@
 
 (defn translate
   "Move the turtle t horizontally by length dx and vertically by length dy."
-  [{:keys [x y pen] :as t} dx dy]
+  [{:keys [x y pen lines] :as t} dx dy]
   (let [new-x (+ x dx)
         new-y (+ y dy)
         line (new-line t [x y] [new-x new-y])]
-    ;; translate is used by forward/back to draw the next movement
-    (when pen
-      (swap! lines conj line))
     (assoc t
       :x new-x
-      :y new-y 
+      :y new-y
+      :lines (if pen
+               (conj lines line)
+               lines)
       :start-fill false)))
 
 (def deg->radians q/radians)
@@ -241,10 +239,10 @@
        (alter-turtle turt alter-fn)
        )))
 
-(defn draw-turtle
+(defn draw-turtle-marker
   "A helper function that draws the triangle that represents the turtle onto the screen."
   ([]
-     (draw-turtle turtle))
+     (draw-turtle-marker turtle))
   ([turt]
      (let [
            ;; set up a copy of the turtle to draw the triangle that
@@ -317,10 +315,10 @@
 (defn clean
   "Clear the lines state, which effectively clears the drawing canvas."
   ([]
-     (clean lines))
-  ([lines]
-     (letfn [(alter-fn [ls] [])]
-       (swap! lines alter-fn))))
+     (clean turtle))
+  ([turt]
+     (letfn [(alter-fn [t] (assoc t :lines []))]
+       (swap! turt alter-fn))))
 
 (defn setxy
   "Set the position of turtle turt to x-coordinate x and y-coordinate y."
@@ -377,9 +375,9 @@
      (js/setTimeout #(set! quil.sketch/*applet* (q/get-sketch-by-id "turtle-canvas")) 5))
   (reset-rendering))
 
-(defn draw
+(defn draw-turtle
   "The function passed to Quil for doing rendering."
-  []
+  [turt]
   ;; Use push-matrix to apply a transformation to the graphing plane.
   (q/push-matrix)
   ;; By default, positive x is to the right, positive y is down.
@@ -392,12 +390,17 @@
   ;; x-/y-axes into mathematicians' x-/y-axes
   (q/scale 1.0 -1.0)
   ;; Draw the lines of where the turtle has been.
-  (doseq [l @lines]
+  (doseq [l (:lines @turt)]
     (draw-line l))
   ;; Draw the turtle itself.
-  (draw-turtle)
+  (draw-turtle-marker turt)
   (q/pop-matrix)
   (q/pop-matrix))
+
+(defn draw
+  "The function passed to Quil for doing rendering."
+  []
+  (draw-turtle turtle))
 
 (defmacro if-cljs
   "Executes `then` clause iff generating ClojureScript code. Stolen from Prismatic code.
