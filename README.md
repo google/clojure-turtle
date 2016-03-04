@@ -66,7 +66,7 @@ user=> (new-window {:size [300 480]})
 
 ### forward, back, right, left
 
-It's `forward`, `back`, `right`, and `left` as in Logo.  Go forward and back by a length (in pixels).  Right and left turn the turtle by an angle, in degrees.  It's Clojure syntax, so 'executing commands' (function calls) are done within parenthases.
+It's `forward`, `back`, `right`, and `left` as in Logo.  Go forward and back by a length (in pixels).  Right and left turn the turtle by an angle, in degrees.  It's Clojure syntax, so 'executing commands' (function calls) are done within parentheses.
 
 ```clojure
 (forward 30)
@@ -85,7 +85,7 @@ It's `forward`, `back`, `right`, and `left` as in Logo.  Go forward and back by 
 
 ### repeat, all
 
-`repeat` is like the Logo function, or like Clojure's `repeatedly`.  Going from the Logo syntax to clojure-turtle's syntax for `repeat`, commands that are being repeated are put within parenthases notation.  The square brackets that group the repeated commands are replaced with `(all ... )`.  The equivalent of the Logo `REPEAT 3 [FORWARD 30 RIGHT 90]` would be
+`repeat` is like the Logo function, or like Clojure's `repeatedly`.  Going from the Logo syntax to clojure-turtle's syntax for `repeat`, commands that are being repeated are put within parentheses notation.  The square brackets that group the repeated commands are replaced with `(all ... )`.  The equivalent of the Logo `REPEAT 3 [FORWARD 30 RIGHT 90]` would be
 
 ```clojure
 (repeat 3 (all (forward 30) (right 90)))
@@ -128,7 +128,7 @@ Let's simplify further.
 ![](https://github.com/google/clojure-turtle/blob/master/doc/img/frame06.png)
 
 
-So given a named set of instructions, we can invoke the instructions by putting the name in parenthases just like we do for functions like `forward`, `left`, and `repeat`
+So given a named set of instructions, we can invoke the instructions by putting the name in parentheses just like we do for functions like `forward`, `left`, and `repeat`
 
 ```clojure
 (def square-and-turn (all (square) (left 90)))
@@ -321,6 +321,6 @@ This is not an official Google product (experimental or otherwise), it is just c
 
 ### Dependencies
 
-Quil is distributed under the Eclipse Public License either version 1.0 (or at your option) any later verison.
+Quil is distributed under the Eclipse Public License either version 1.0 (or at your option) any later version.
 
 The official Processing.org's jars, used as dependencies of Quil, are distributed under LGPL and their code can be found on http://processing.org/
