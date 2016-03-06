@@ -73,9 +73,9 @@
 (defn alter-turtle
   "A helper function used in the implementation of basic operations to abstract
   out the interface of applying a function to a turtle entity."
-  [turt f] 
-  (swap! turt f)
-  turt)
+  [turt-state f]
+  (swap! turt-state f)
+  turt-state)
 
 ;;
 ;; fns - colors and effects
@@ -86,12 +86,12 @@
   RGB values are in the range 0 to 255, inclusive."
   ([c]
      (color turtle c))
-  ([turt c]
+  ([turt-state c]
      (assert (= 3 (count c)) (str "Color should be specified as (color [red green blue])"))
      (letfn [(alter-fn [t] (-> t
                                (assoc :color c)
                                (update-in [:commands] conj [:color c])))]
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 ;;
 ;; fns - basic Logo commands
@@ -101,7 +101,7 @@
   "Rotate the turtle turt clockwise by ang degrees."
   ([ang]
      (right turtle ang))
-  ([turt ang]
+  ([turt-state ang]
      ;; the local fn add-angle will increment the angle but keep the
      ;; resulting angle in the range [0,360), in degrees.
      (letfn [(add-angle
@@ -112,14 +112,14 @@
                  (-> t
                      (assoc :angle new-angle)
                      (update-in [:commands] conj [:setheading new-angle]))))]
-       (alter-turtle turt add-angle))))
+       (alter-turtle turt-state add-angle))))
 
 (defn left
   "Same as right, but turns the turtle counter-clockwise."
   ([ang]
      (right (* -1 ang)))
-  ([turt ang]
-     (right turt (* -1 ang))))
+  ([turt-state ang]
+     (right turt-state (* -1 ang))))
 
 (def deg->radians q/radians)
 
@@ -131,66 +131,66 @@
   "Move the turtle turt forward in the direction that it is facing by length len."
   ([len]
      (forward turtle len))
-  ([turt len]
+  ([turt-state len]
      ;; Convert the turtle's polar coordinates (angle + radius) into
      ;; Cartesian coordinates (x,y) for display purposes
-     (let [rads (deg->radians (get @turt :angle))
+     (let [rads (deg->radians (get @turt-state :angle))
            dx (* len (Math/cos rads))
            dy (* len (Math/sin rads))
            alter-fn (fn [t] (-> t
                                (update-in [:x] + dx)
                                (update-in [:y] + dy)
                                (update-in [:commands] conj [:translate [dx dy]])))] 
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defn back
   "Same as forward, but move the turtle backwards, which is opposite of the direction it is facing."
   ([len]
      (forward (* -1 len)))
-  ([turt len]
-     (forward turt (* -1 len))))
+  ([turt-state len]
+     (forward turt-state (* -1 len))))
 
 (defn penup
   "Instruct the turtle to pick its pen up. Subsequent movements will not draw to screen until the pen is put down again."
   ([]
      (penup turtle))
-  ([turt]
+  ([turt-state]
      (letfn [(alter-fn [t] (-> t
                                (assoc :pen false)
                                (update-in [:commands] conj [:pen false])))]
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defn pendown
   "Instruct the turtle to put its pen down. Subsequent movements will draw to screen."
   ([]
      (pendown turtle))
-  ([turt]
+  ([turt-state]
      (letfn [(alter-fn [t] (-> t
                                (assoc :pen true)
                                (update-in [:commands] conj [:pen true])))]
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defn start-fill
   "Make the turtle fill the area created by his subsequent moves, until end-fill is called."
   ([]
      (start-fill turtle))
-  ([turt]
+  ([turt-state]
      (letfn [(alter-fn [t]
                (-> t
                    (assoc :fill true)
                    (update-in [:commands] conj [:start-fill])))] 
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defn end-fill
   "Stop filling the area of turtle moves. Must be called start-fill."
   ([]
      (end-fill turtle))
-  ([turt]
+  ([turt-state]
      (letfn [(alter-fn [t]
                (-> t
                    (assoc :fill false)
                    (update-in [:commands] conj [:end-fill])))]
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defmacro all
   "This macro was created to substitute for the purpose served by the square brackets in Logo
@@ -214,42 +214,42 @@
   "Clear the lines state, which effectively clears the drawing canvas."
   ([]
      (clean turtle))
-  ([turt]
+  ([turt-state]
      (letfn [(alter-fn [t] (-> t
                                (assoc :commands [])))]
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defn setxy
   "Set the position of turtle turt to x-coordinate x and y-coordinate y."
   ([x y]
      (setxy turtle x y))
-  ([turt x y]
-     (let [pen-down? (get @turt :pen)]
+  ([turt-state x y]
+     (let [pen-down? (get @turt-state :pen)]
        (letfn [(alter-fn [t] 
                  (-> t
                      (assoc :x x)
                      (assoc :y y)
                      (update-in [:commands] conj [:setxy [x y]])))]
-         (alter-turtle turt alter-fn)))))
+         (alter-turtle turt-state alter-fn)))))
 
 (defn setheading
   "Set the direction which the turtle is facing, given in degrees, where 0 is to the right,
   90 is up, 180 is left, and 270 is down."
   ([ang]
      (setheading turtle ang))
-  ([turt ang]
+  ([turt-state ang]
      (letfn [(alter-fn [t] (-> t
                                (assoc :angle ang)
                                (update-in [:commands] conj [:setheading ang])))]
-       (alter-turtle turt alter-fn))))
+       (alter-turtle turt-state alter-fn))))
 
 (defn home
   "Set the turtle at coordinates (0,0), facing up (heading = 90 degrees)"
   ([]
      (home turtle))
-  ([turt]
-     (setxy turt 0 0) 
-     (setheading turt 90)))
+  ([turt-state]
+     (setxy turt-state 0 0) 
+     (setheading turt-state 90)))
 
 ;;
 ;; fns - (Quil-based) rendering and graphics
@@ -287,7 +287,9 @@
                             atan
                             radians->deg)
            small-angle (- 90 large-angle)
-           turt-copy (atom (assoc turt :pen true :commands []))] 
+           turt-copy-state  (-> (atom turt)
+                                pendown
+                                clean)] 
        ;; Use the turtle copy to step through the commands required
        ;; to draw the triangle that represents the turtle.   the
        ;; turtle copy will be used for the commands stored within it.
@@ -295,7 +297,7 @@
        ;; where turt ended so that the turtle sprite is drawn in the
        ;; right place.
        (do
-         (-> turt-copy
+         (-> turt-copy-state
              (setxy (:x turt) (:y turt))
              (right 90)
              (forward short-leg)
@@ -307,7 +309,7 @@
              (forward short-leg)
              (left 90)))
        ;; now return the turtle copy
-       turt-copy)))
+       turt-copy-state)))
 
 (defn draw-turtle-commands
   "Takes a seq of turtle commands and converts them into Quil commands to draw
@@ -351,7 +353,7 @@
 
 (defn draw-turtle
   "The function passed to Quil for doing rendering."
-  [turt]
+  [turt-state]
   ;; Use push-matrix to apply a transformation to the graphing plane.
   (q/push-matrix)
   ;; By default, positive x is to the right, positive y is down.
@@ -367,9 +369,9 @@
   (apply q/stroke DEFAULT-COLOR)
   (apply q/fill DEFAULT-COLOR)
   ;; Draw the lines of where the turtle has been.
-  (draw-turtle-commands @turt)
+  (draw-turtle-commands @turt-state)
   ;; Draw the sprite (triangle) representing the turtle itself.
-  (let [sprite (get-turtle-sprite @turt)] 
+  (let [sprite (get-turtle-sprite @turt-state)] 
     (draw-turtle-commands @sprite))
   ;; Undo the graphing plane transformation in Quil/Processing
   (q/pop-matrix)
