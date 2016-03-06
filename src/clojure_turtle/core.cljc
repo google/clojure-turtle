@@ -28,7 +28,7 @@
 ;; records
 ;;
 
-(defrecord Turtle [x y angle pen color start-fill end-fill fill lines] 
+(defrecord Turtle [x y angle pen color fill commands] 
   ;; both for Clojure and ClojureScript, override the behavior of the
   ;; str fn / .toString method to "restore" the default .toString
   ;; behavior for the entire Turtle record data, instead of just
@@ -46,9 +46,8 @@
   (pr-str (select-keys turt [:x :y :angle :pen :color :fill])))
 
 #?(:clj (defmethod print-method Turtle [turt writer]
-          (.write writer (pr-str-turtle turt))))
-
-#?(:cljs (extend-type Turtle
+          (.write writer (pr-str-turtle turt)))
+   :cljs (extend-type Turtle
            IPrintWithWriter
            (-pr-writer [turt writer _]
              (-write writer (pr-str-turtle turt)))))
@@ -65,10 +64,8 @@
                       :angle 90
                       :pen true
                       :color DEFAULT-COLOR
-                      :start-fill false
-                      :end-fill false
                       :fill false
-                      :lines []})))
+                      :commands []})))
 
 (def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
   turtle (new-turtle))
@@ -91,7 +88,9 @@
      (color turtle c))
   ([turt c]
      (assert (= 3 (count c)) (str "Color should be specified as (color [red green blue])"))
-     (letfn [(alter-fn [t] (assoc t :color c))]
+     (letfn [(alter-fn [t] (-> t
+                               (assoc :color c)
+                               (update-in [:commands] conj [:color c])))]
        (alter-turtle turt alter-fn))))
 
 ;;
@@ -110,7 +109,9 @@
                (let [new-angle (-> angle
                                    (- ang)
                                    (mod 360))]
-                 (assoc t :angle new-angle)))]
+                 (-> t
+                     (assoc :angle new-angle)
+                     (update-in [:commands] conj [:setheading new-angle]))))]
        (alter-turtle turt add-angle))))
 
 (defn left
@@ -119,34 +120,6 @@
      (right (* -1 ang)))
   ([turt ang]
      (right turt (* -1 ang))))
-
-(defn new-line
-  "Return a data structure representing the line between the coordinates
-  (x1,y1) and (x2,y2)."
-  ([[x1 y1] [x2 y2]]
-     (new-line turtle [x1 y1] [x2 y2]))
-  ([turt [x1 y1] [x2 y2]]
-     (let [{:keys [start-fill fill end-fill]} turt]
-       {:from [x1 y1]
-        :to [x2 y2]
-        :color (:color turt)
-        :fill fill
-        :start-fill start-fill
-        :end-fill end-fill})))
-
-(defn translate
-  "Move the turtle t horizontally by length dx and vertically by length dy."
-  [{:keys [x y pen lines] :as t} dx dy]
-  (let [new-x (+ x dx)
-        new-y (+ y dy)
-        line (new-line t [x y] [new-x new-y])]
-    (assoc t
-      :x new-x
-      :y new-y
-      :lines (if pen
-               (conj lines line)
-               lines)
-      :start-fill false)))
 
 (def deg->radians q/radians)
 
@@ -164,7 +137,10 @@
      (let [rads (deg->radians (get @turt :angle))
            dx (* len (Math/cos rads))
            dy (* len (Math/sin rads))
-           alter-fn #(translate % dx dy)] 
+           alter-fn (fn [t] (-> t
+                               (update-in [:x] + dx)
+                               (update-in [:y] + dy)
+                               (update-in [:commands] conj [:translate [dx dy]])))] 
        (alter-turtle turt alter-fn))))
 
 (defn back
@@ -179,7 +155,9 @@
   ([]
      (penup turtle))
   ([turt]
-     (letfn [(alter-fn [t] (assoc t :pen false))]
+     (letfn [(alter-fn [t] (-> t
+                               (assoc :pen false)
+                               (update-in [:commands] conj [:pen false])))]
        (alter-turtle turt alter-fn))))
 
 (defn pendown
@@ -187,34 +165,10 @@
   ([]
      (pendown turtle))
   ([turt]
-     (letfn [(alter-fn [t] (assoc t :pen true))]
+     (letfn [(alter-fn [t] (-> t
+                               (assoc :pen true)
+                               (update-in [:commands] conj [:pen true])))]
        (alter-turtle turt alter-fn))))
-
-(defn draw-line
-  "A helper function that draws a line between 'from' and 'to'."
-  ([line]
-     (draw-line turtle line))
-  ([turt line]
-     (let [{:keys [from to start-fill fill end-fill]} line
-           [x1 y1] from
-           [x2 y2] to
-           c (:color line)]
-       ;; tell Quil to set the line color
-       (apply q/stroke c)
-       ;; tell Quil to draw the line
-       (q/line x1 y1 x2 y2)
-       ;; check whether to begin a filled shape
-       (when start-fill
-         (q/begin-shape))
-       ;; check whether to continue a filled shape
-       (when fill
-         (q/vertex x1 y1)
-         (q/vertex x2 y2))
-       ;; check whether to end a filled shape, using current color as
-       ;; fill color
-       (when end-fill
-         (apply q/fill c)
-         (q/end-shape)))))
 
 (defn start-fill
   "Make the turtle fill the area created by his subsequent moves, until end-fill is called."
@@ -223,8 +177,8 @@
   ([turt]
      (letfn [(alter-fn [t]
                (-> t
-                   (assoc :start-fill true :fill true :end-fill false)
-                   (translate 0 0)))] 
+                   (assoc :fill true)
+                   (update-in [:commands] conj [:start-fill])))] 
        (alter-turtle turt alter-fn))))
 
 (defn end-fill
@@ -234,65 +188,9 @@
   ([turt]
      (letfn [(alter-fn [t]
                (-> t
-                   (assoc :start-fill false :fill false :end-fill true)
-                   (translate 0 0)))]
-       (alter-turtle turt alter-fn)
-       )))
-
-(defn draw-turtle-marker
-  "A helper function that draws the triangle that represents the turtle onto the screen."
-  ([]
-     (draw-turtle-marker turtle))
-  ([turt]
-     (let [
-           ;; set up a copy of the turtle to draw the triangle that
-           ;; will represent / show the turtle on the graphics canvas
-           short-leg 5
-           long-leg 12
-           hypoteneuse (Math/sqrt (+ (* short-leg short-leg)
-                                     (* long-leg long-leg)))
-           large-angle  (-> (/ long-leg short-leg)
-                            atan
-                            radians->deg)
-           small-angle (- 90 large-angle)
-           pen-down? (get-in @turt [:pen])
-           turt-copy (atom (assoc @turt :pen false))
-           turt-copy-points (atom [])]
-       (letfn [(record-turt-point
-                 ;; record-turt-point takes the current position of the copy
-                 ;; of the turtle, as a point, and saves it in a seq
-                 ;; of points (from which to form lines later)
-                 [t]
-                 (let [new-x (get @t :x)
-                       new-y (get @t :y)
-                       new-point [new-x new-y]]
-                   (swap! turt-copy-points conj new-point))
-                 t)]
-         ;; use the turtle copy to step through the commands required
-         ;; to draw the triangle that represents the turtle.  only at
-         ;; certain points do we record the point, which will be
-         ;; needed to draw the segments that will form the turtle triangle
-         (do
-           (-> turt-copy
-               record-turt-point
-               (right 90)
-               (forward short-leg)
-               record-turt-point
-               (left (- 180 large-angle))
-               (forward hypoteneuse)
-               record-turt-point
-               (left (- 180 (* 2 small-angle)))
-               (forward hypoteneuse)
-               record-turt-point
-               (left (- 180 large-angle))
-               (forward short-leg)
-               record-turt-point
-               (left 90)))
-         (let [from-to-point-pairs (partition 2 1 @turt-copy-points)
-               lines (map (partial apply new-line @turt-copy) from-to-point-pairs)]
-           ;; draw the lines that represent the turtle 
-           (dorun
-            (map draw-line lines)))))))
+                   (assoc :fill false)
+                   (update-in [:commands] conj [:end-fill])))]
+       (alter-turtle turt alter-fn))))
 
 (defmacro all
   "This macro was created to substitute for the purpose served by the square brackets in Logo
@@ -317,8 +215,9 @@
   ([]
      (clean turtle))
   ([turt]
-     (letfn [(alter-fn [t] (assoc t :lines []))]
-       (swap! turt alter-fn))))
+     (letfn [(alter-fn [t] (-> t
+                               (assoc :commands [])))]
+       (alter-turtle turt alter-fn))))
 
 (defn setxy
   "Set the position of turtle turt to x-coordinate x and y-coordinate y."
@@ -329,12 +228,9 @@
        (letfn [(alter-fn [t] 
                  (-> t
                      (assoc :x x)
-                     (assoc :y y)))]
-         (penup turt)
-         (alter-turtle turt alter-fn)
-         (when pen-down?
-           (pendown turt))
-         turt))))
+                     (assoc :y y)
+                     (update-in [:commands] conj [:setxy [x y]])))]
+         (alter-turtle turt alter-fn)))))
 
 (defn setheading
   "Set the direction which the turtle is facing, given in degrees, where 0 is to the right,
@@ -343,17 +239,17 @@
      (setheading turtle ang))
   ([turt ang]
      (letfn [(alter-fn [t] (-> t
-                               (assoc :angle ang)))]
+                               (assoc :angle ang)
+                               (update-in [:commands] conj [:setheading ang])))]
        (alter-turtle turt alter-fn))))
 
 (defn home
   "Set the turtle at coordinates (0,0), facing up (heading = 90 degrees)"
   ([]
      (home turtle))
-  ([turt] 
+  ([turt]
      (setxy turt 0 0) 
-     (setheading turt 90)
-     (color turt DEFAULT-COLOR)))
+     (setheading turt 90)))
 
 ;;
 ;; fns - (Quil-based) rendering and graphics
@@ -375,6 +271,84 @@
      (js/setTimeout #(set! quil.sketch/*applet* (q/get-sketch-by-id "turtle-canvas")) 5))
   (reset-rendering))
 
+(defn get-turtle-sprite
+  "A helper function that draws the triangle that represents the turtle onto the screen."
+  ([]
+     (get-turtle-sprite turtle))
+  ([turt]
+     (let [
+           ;; set up a copy of the turtle to draw the triangle that
+           ;; will represent / show the turtle on the graphics canvas
+           short-leg 5
+           long-leg 12
+           hypoteneuse (Math/sqrt (+ (* short-leg short-leg)
+                                     (* long-leg long-leg)))
+           large-angle  (-> (/ long-leg short-leg)
+                            atan
+                            radians->deg)
+           small-angle (- 90 large-angle)
+           turt-copy (atom (assoc turt :pen true :commands []))] 
+       ;; Use the turtle copy to step through the commands required
+       ;; to draw the triangle that represents the turtle.   the
+       ;; turtle copy will be used for the commands stored within it.
+       ;; Since drawing starts at (0,0), we should teleport to
+       ;; where turt ended so that the turtle sprite is drawn in the
+       ;; right place.
+       (do
+         (-> turt-copy
+             (setxy (:x turt) (:y turt))
+             (right 90)
+             (forward short-leg)
+             (left (- 180 large-angle))
+             (forward hypoteneuse)
+             (left (- 180 (* 2 small-angle)))
+             (forward hypoteneuse)
+             (left (- 180 large-angle))
+             (forward short-leg)
+             (left 90)))
+       ;; now return the turtle copy
+       turt-copy)))
+
+(defn draw-turtle-commands
+  "Takes a seq of turtle commands and converts them into Quil commands to draw
+  onto the canvas"
+  [turt]
+  (loop [t @(new-turtle)
+         commands (:commands turt)]
+    (if (empty? commands)
+      t
+      (let [next-cmd (first commands)
+            cmd-name (first next-cmd)
+            cmd-vals (rest next-cmd)
+            rest-cmds (rest commands)]
+        (case cmd-name
+          :color (let [c (first cmd-vals)]
+                   (apply q/stroke c)
+                   (apply q/fill c)
+                   (recur (assoc t :color c) rest-cmds))
+          :setxy (let [[x y] (first cmd-vals)]
+                   (recur (assoc t :x x :y y) rest-cmds))
+          :setheading (recur (assoc t :angle (first cmd-vals)) rest-cmds)
+          :translate (let [x (:x t)
+                           y (:y t)
+                           [dx dy] (first cmd-vals)
+                           new-x (+ x dx)
+                           new-y (+ y dy)]
+                       (when (:pen t)
+                         (q/line x y new-x new-y)
+                         (when (:fill t)
+                           (q/vertex x y)
+                           (q/vertex new-x new-y)))
+                       (recur (assoc t :x new-x :y new-y) rest-cmds))
+          :pen (recur (assoc t :pen (first cmd-vals)) rest-cmds)
+          :start-fill (do (when-not (:fill t)
+                            (q/begin-shape))
+                          (recur (assoc t :fill true) rest-cmds))
+          :end-fill (do (when (:fill t)
+                          (q/end-shape))
+                        (recur (assoc t :fill false) rest-cmds))
+          t)))))
+
 (defn draw-turtle
   "The function passed to Quil for doing rendering."
   [turt]
@@ -389,11 +363,15 @@
   ;; Flip the coordinates horizontally -- converts programmers'
   ;; x-/y-axes into mathematicians' x-/y-axes
   (q/scale 1.0 -1.0)
+  ;; Set the default colors for line stroke and shape fill
+  (apply q/stroke DEFAULT-COLOR)
+  (apply q/fill DEFAULT-COLOR)
   ;; Draw the lines of where the turtle has been.
-  (doseq [l (:lines @turt)]
-    (draw-line l))
-  ;; Draw the turtle itself.
-  (draw-turtle-marker turt)
+  (draw-turtle-commands @turt)
+  ;; Draw the sprite (triangle) representing the turtle itself.
+  (let [sprite (get-turtle-sprite @turt)] 
+    (draw-turtle-commands @sprite))
+  ;; Undo the graphing plane transformation in Quil/Processing
   (q/pop-matrix)
   (q/pop-matrix))
 
