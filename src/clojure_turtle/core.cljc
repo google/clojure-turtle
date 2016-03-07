@@ -87,7 +87,6 @@
   ([c]
      (color turtle c))
   ([turt-state c]
-     (assert (= 3 (count c)) (str "Color should be specified as (color [red green blue])"))
      (letfn [(alter-fn [t] (-> t
                                (assoc :color c)
                                (update-in [:commands] conj [:color c])))]
