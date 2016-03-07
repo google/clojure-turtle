@@ -13,7 +13,7 @@
                                [:timezone "-8"]]]
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/clojurescript "1.7.170"]
-                 [quil "2.3.0"]]
+                 [quil "2.2.6"]]
 
   :profiles {:dev {:plugins [[lein-figwheel "0.5.0-6"]
                              [lein-cljsbuild "1.1.2"]]
