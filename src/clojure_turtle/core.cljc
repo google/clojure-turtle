@@ -209,6 +209,14 @@
      (dorun
       states#)
      (last states#)))
+   
+(defn wait
+      "Sleeps for ms miliseconds. Can be used in a repeat to show commands execute in real time"
+      ([ms]
+      (letfn [(get-time []
+        (System/currentTimeMillis))]
+        (let [initial-time (get-time)]
+           (while (< (get-time) (+ initial-time ms)))))))
 
 (defn clean
   "Clear the lines state, which effectively clears the drawing canvas."
