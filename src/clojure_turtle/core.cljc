@@ -15,7 +15,8 @@
 (ns clojure-turtle.core
   (:refer-clojure :exclude [repeat])
   (:require #?(:clj [quil.core :as q]
-               :cljs [quil.core :as q :include-macros true])))
+               :cljs [quil.core :as q :include-macros true]))
+  #?(:clj (:import java.util.Date)))
 
 ;;
 ;; constants
@@ -214,7 +215,8 @@
   "Sleeps for ms miliseconds. Can be used in a repeat to show commands execute in real time"
   [ms]
   (letfn [(get-time []
-            (System/currentTimeMillis))]
+            #?(:clj (.getTime (Date.))
+               :cljs (.getTime (js/Date.))))]
     (let [initial-time (get-time)]
       (while (< (get-time) (+ initial-time ms))))))
 
