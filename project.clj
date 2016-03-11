@@ -15,13 +15,15 @@
                  [org.clojure/clojurescript "1.7.170"]
                  [quil "2.2.6"]]
 
+  :source-paths ["src/cljc" "src/cljs"]
+
   :profiles {:dev {:plugins [[lein-figwheel "0.5.0-6"]
                              [lein-cljsbuild "1.1.2"]]
                    :resource-paths ["demo/public"]
                    :cljsbuild
                    {:builds
                     [{:id "dev"
-                      :source-paths ["src" "demo/src"]
+                      :source-paths ["src/cljc" "src/cljs" "demo/src"]
                       :figwheel {}
                       :compiler {:main "clojure-turtle.demo"
                                  :source-map true
