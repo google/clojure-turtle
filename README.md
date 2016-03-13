@@ -290,6 +290,7 @@ Then, in your browser, visit the URL in the terminal output from the command -- 
 
 ```
 cljs.user=> (ns clojure-turtle.core)
+cljs.user=> (require '[clojure-turtle.macros :refer-macros [repeat all]])
 ```
 
 Now, the above Logo/`clojure-turtle` commands can be issued in the CLJS REPL as described above, with the result visible in the Figwheel-connected browser page.
