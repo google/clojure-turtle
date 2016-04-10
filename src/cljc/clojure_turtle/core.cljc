@@ -87,8 +87,21 @@
   turt-state)
 
 ;;
-;; fns - colors and effects
+;; fns - colors and visual effects
 ;;
+
+(defn make-opaque
+  "Take a color vector, as passed to the `color` fn, and return a color vector
+  in the form [red blue green alpha], where all RGB and alpha values are integers
+  in the range 0-255 inclusive. In order to make the color vector represent full
+  opacity, the alpha value will be 255."
+  [color-vec]
+  (let [rgb-vec (case (count color-vec)
+                  1 (clojure.core/repeat 3 (first color-vec))
+                  3 color-vec
+                  4 (take 3 color-vec))
+        rgba-vec (concat rgb-vec [255])]
+    rgba-vec))
 
 (defn color
   "Set the turtle's color using [red green blue].
@@ -312,7 +325,9 @@
            small-angle (- 90 large-angle)
            turt-copy-state  (-> (atom turt)
                                 pendown
-                                clean)] 
+                                clean)
+           current-color (:color turt)
+           opaque-color (make-opaque current-color)]
        ;; Use the turtle copy to step through the commands required
        ;; to draw the triangle that represents the turtle.   the
        ;; turtle copy will be used for the commands stored within it.
@@ -322,6 +337,7 @@
        (do
          (-> turt-copy-state
              (setxy (:x turt) (:y turt))
+             (color opaque-color)
              (right 90)
              (forward short-leg)
              (left (- 180 large-angle))
