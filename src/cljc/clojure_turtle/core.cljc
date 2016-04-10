@@ -35,7 +35,7 @@
 ;; records
 ;;
 
-(defrecord Turtle [x y angle pen color fill commands] 
+(defrecord Turtle [x y angle pen color fill commands start-from]
   ;; both for Clojure and ClojureScript, override the behavior of the
   ;; str fn / .toString method to "restore" the default .toString
   ;; behavior for the entire Turtle record data, instead of just
@@ -72,7 +72,9 @@
                       :pen true
                       :color DEFAULT-COLOR
                       :fill false
-                      :commands []})))
+                      :commands []
+                      :start-from {:x 0
+                                   :y 0}})))
 
 (def ^{:doc "The default turtle entity used when no turtle is specified for an operation."}
   turtle (new-turtle))
@@ -232,8 +234,12 @@
   ([]
      (clean turtle))
   ([turt-state]
-     (letfn [(alter-fn [t] (-> t
-                               (assoc :commands [])))]
+     (letfn [(alter-fn
+               [t]
+               (let [curr-pos-map (select-keys t [:x :y])]
+                 (-> t
+                     (assoc :commands [])
+                     (assoc :start-from curr-pos-map))))]
        (alter-turtle turt-state alter-fn))))
 
 (defn setxy
@@ -332,41 +338,46 @@
   "Takes a seq of turtle commands and converts them into Quil commands to draw
   onto the canvas"
   [turt]
-  (loop [t @(new-turtle)
-         commands (:commands turt)]
-    (if (empty? commands)
-      t
-      (let [next-cmd (first commands)
-            cmd-name (first next-cmd)
-            cmd-vals (rest next-cmd)
-            rest-cmds (rest commands)]
-        (case cmd-name
-          :color (let [c (first cmd-vals)]
-                   (apply q/stroke c)
-                   (apply q/fill c)
-                   (recur (assoc t :color c) rest-cmds))
-          :setxy (let [[x y] (first cmd-vals)]
-                   (recur (assoc t :x x :y y) rest-cmds))
-          :setheading (recur (assoc t :angle (first cmd-vals)) rest-cmds)
-          :translate (let [x (:x t)
-                           y (:y t)
-                           [dx dy] (first cmd-vals)
-                           new-x (+ x dx)
-                           new-y (+ y dy)]
-                       (when (:pen t)
-                         (q/line x y new-x new-y)
-                         (when (:fill t)
-                           (q/vertex x y)
-                           (q/vertex new-x new-y)))
-                       (recur (assoc t :x new-x :y new-y) rest-cmds))
-          :pen (recur (assoc t :pen (first cmd-vals)) rest-cmds)
-          :start-fill (do (when-not (:fill t)
-                            (q/begin-shape))
-                          (recur (assoc t :fill true) rest-cmds))
-          :end-fill (do (when (:fill t)
-                          (q/end-shape))
-                        (recur (assoc t :fill false) rest-cmds))
-          t)))))
+  (let [new-turtle @(new-turtle)
+        start-from-pos (get turt :start-from)
+        new-turtle-with-start (-> new-turtle
+                                  (assoc :x (:x start-from-pos))
+                                  (assoc :y (:y start-from-pos)))]
+    (loop [t new-turtle-with-start
+           commands (:commands turt)]
+      (if (empty? commands)
+        t
+        (let [next-cmd (first commands)
+              cmd-name (first next-cmd)
+              cmd-vals (rest next-cmd)
+              rest-cmds (rest commands)]
+          (case cmd-name
+            :color (let [c (first cmd-vals)]
+                     (apply q/stroke c)
+                     (apply q/fill c)
+                     (recur (assoc t :color c) rest-cmds))
+            :setxy (let [[x y] (first cmd-vals)]
+                     (recur (assoc t :x x :y y) rest-cmds))
+            :setheading (recur (assoc t :angle (first cmd-vals)) rest-cmds)
+            :translate (let [x (:x t)
+                             y (:y t)
+                             [dx dy] (first cmd-vals)
+                             new-x (+ x dx)
+                             new-y (+ y dy)]
+                         (when (:pen t)
+                           (q/line x y new-x new-y)
+                           (when (:fill t)
+                             (q/vertex x y)
+                             (q/vertex new-x new-y)))
+                         (recur (assoc t :x new-x :y new-y) rest-cmds))
+            :pen (recur (assoc t :pen (first cmd-vals)) rest-cmds)
+            :start-fill (do (when-not (:fill t)
+                              (q/begin-shape))
+                            (recur (assoc t :fill true) rest-cmds))
+            :end-fill (do (when (:fill t)
+                            (q/end-shape))
+                          (recur (assoc t :fill false) rest-cmds))
+            t))))))
 
 (defn draw-turtle
   "The function passed to Quil for doing rendering."
