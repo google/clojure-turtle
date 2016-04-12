@@ -209,7 +209,7 @@ green, and blue components of the color (in that order) in the range
 for examples of specifying color in terms of RGB values.)
 
 ```clojure
-(def octagon (all (repeat 8 (all (forward 30) (right))))) 
+(def octagon (all (repeat 8 (all (forward 30) (right 45))))) 
 (color [0 0 255])
 (octagon)
 ```
