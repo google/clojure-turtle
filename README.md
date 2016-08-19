@@ -6,7 +6,7 @@ Logo is a simple language that is useful in introducing programming to beginners
 
 ## Artifacts
 
-`clojure-turtle` artifacts are [released to Clojars](https://clojars.org/echeran/clojure-turtle).
+`clojure-turtle` artifacts are [released to Clojars](https://clojars.org/clojure-turtle).
 
 If you are using Maven, add the following repository definition to your `pom.xml`:
 
