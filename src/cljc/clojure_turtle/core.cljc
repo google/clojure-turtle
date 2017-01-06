@@ -331,12 +331,12 @@
        ;; Use the turtle copy to step through the commands required
        ;; to draw the triangle that represents the turtle.   the
        ;; turtle copy will be used for the commands stored within it.
-       ;; Since drawing starts at (0,0), we should teleport to
-       ;; where turt ended so that the turtle sprite is drawn in the
-       ;; right place.
        (do
          (-> turt-copy-state
-             (setxy (:x turt) (:y turt))
+             (setxy (:x turt) (:y turt)) ;teleport to the current position (turtle's centre)
+             (penup)
+             (back (/ long-leg 3)) ;move backwards to the centre of the turtle's base
+             (pendown)
              (color opaque-color)
              (right 90)
              (forward short-leg)
