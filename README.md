@@ -22,7 +22,7 @@ If you are using Maven, add the following repository definition to your `pom.xml
 With Leiningen:
 
 ``` clj
-[com.google/clojure-turtle "0.2.0"]
+[com.google/clojure-turtle "0.3.0"]
 ```
 
 With Maven:
@@ -31,7 +31,7 @@ With Maven:
 <dependency>
   <groupId>com.google</groupId>
   <artifactId>clojure-turtle</artifactId>
-  <version>0.2.0</version>
+  <version>0.3.0</version>
 </dependency>
 ```
 
