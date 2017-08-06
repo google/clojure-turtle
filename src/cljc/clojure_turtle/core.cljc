@@ -18,7 +18,9 @@
      (:require [quil.core :as q])
      :cljs
      (:require [quil.core :as q :include-macros true]
-               [clojure-turtle.macros :refer-macros [repeat all]]))
+               [clojure-turtle.macros :refer-macros [repeat all]]
+               [goog.string :as gstring]
+               goog.string.format))
   #?(:clj
      (:import java.util.Date)))
 
@@ -50,7 +52,15 @@
 (defn pr-str-turtle
   "This method determines what gets returned when passing a Turtle record instance to pr-str, which in turn affects what gets printed at the REPL"
   [turt]
-  (pr-str (select-keys turt [:x :y :angle :pen :color :fill])))
+  (pr-str
+    (letfn [(format-key [key]
+                        {key
+                         #?(:clj (format "%.1f" (double (get turt key)))
+                            :cljs (gstring/format "%.1f" (get turt key)))})]
+      (concat (format-key :x)
+              (format-key :y)
+              (format-key :angle)
+              (select-keys turt [:pen :color :fill])))))
 
 #?(:clj (defmethod print-method Turtle [turt writer]
           (.write writer (pr-str-turtle turt)))
