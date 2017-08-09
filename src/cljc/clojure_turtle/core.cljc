@@ -57,10 +57,10 @@
                         {key
                          #?(:clj (format "%.1f" (double (get turt key)))
                             :cljs (gstring/format "%.1f" (get turt key)))})]
-      (concat (format-key :x)
-              (format-key :y)
-              (format-key :angle)
-              (select-keys turt [:pen :color :fill])))))
+      (merge (select-keys turt [:pen :color :fill])
+             (format-key :x)
+             (format-key :y)
+             (format-key :angle)))))
 
 #?(:clj (defmethod print-method Turtle [turt writer]
           (.write writer (pr-str-turtle turt)))
