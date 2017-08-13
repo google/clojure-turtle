@@ -50,7 +50,15 @@
 (defn pr-str-turtle
   "This method determines what gets returned when passing a Turtle record instance to pr-str, which in turn affects what gets printed at the REPL"
   [turt]
-  (pr-str (select-keys turt [:x :y :angle :pen :color :fill])))
+  (pr-str
+    (letfn [(format-key [key]
+                        {key
+                         #?(:clj (float (/ (bigint (* (get turt key) 10)) 10))
+                            :cljs (/ (Math/round (* (get turt key) 10)) 10))})]
+      (merge (select-keys turt [:pen :color :fll])
+             (format-key :x)
+             (format-key :y)
+             (format-key :angle)))))
 
 #?(:clj (defmethod print-method Turtle [turt writer]
           (.write writer (pr-str-turtle turt)))
