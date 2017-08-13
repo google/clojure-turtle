@@ -18,9 +18,7 @@
      (:require [quil.core :as q])
      :cljs
      (:require [quil.core :as q :include-macros true]
-               [clojure-turtle.macros :refer-macros [repeat all]]
-               [goog.string :as gstring]
-               goog.string.format))
+               [clojure-turtle.macros :refer-macros [repeat all]]))
   #?(:clj
      (:import java.util.Date)))
 
@@ -55,9 +53,9 @@
   (pr-str
     (letfn [(format-key [key]
                         {key
-                         #?(:clj (format "%.1f" (double (get turt key)))
-                            :cljs (gstring/format "%.1f" (get turt key)))})]
-      (merge (select-keys turt [:pen :color :fill])
+                         #?(:clj (float (/ (bigint (* (get turt key) 10)) 10))
+                            :cljs (/ (Math/round (* (get turt key) 10)) 10))})]
+      (merge (select-keys turt [:pen :color :fll])
              (format-key :x)
              (format-key :y)
              (format-key :angle)))))
